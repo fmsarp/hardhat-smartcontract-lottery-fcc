@@ -9,6 +9,8 @@
 
 pragma solidity ^0.8.8;
 
+error Raffle__NotEnoughETHEntered();
+
 contract Raffle {
     uint256 private immutable i_entranceFee;
 
@@ -16,7 +18,11 @@ contract Raffle {
         i_entranceFee = entranceFee;
     }
 
-    function enterRaffle() {}
+    function enterRaffle() {
+        if (msg.value < i_entranceFee) {
+            revert Raffle__NotEnoughETHEntered();
+        }
+    }
 
     // function pickRandomWinner() {}
 
