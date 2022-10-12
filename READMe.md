@@ -6,3 +6,4 @@ started writing deploy scripts
 finnished with deployment scripts
 unit and staging tests
 had an error issue with raffle uint test;  error was just a missing ")"
+test working so far
