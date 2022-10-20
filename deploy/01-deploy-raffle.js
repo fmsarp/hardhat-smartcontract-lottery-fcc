@@ -1,10 +1,14 @@
 const { network, ethers } = require("hardhat")
-const { developmentChains, networkConfig } = require("../helper-hardhat-config")
-const { verify } = require("../helper-hardhat-config")
+const {
+    developmentChains,
+    networkConfig,
+    VERIFICATION_BLOCK_CONFIRMATIONS,
+} = require("../helper-hardhat-config")
+const { verify } = require("../utils/verify")
 
-const VRF_SUB_FUND_AMOUNT = ethers.utils.parseEther("2")
+const VRF_SUB_FUND_AMOUNT = ethers.utils.parseEther("1")
 
-module.exports = async function ({ getNamedAccounts, deployments }) {
+module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
@@ -14,26 +18,29 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         const vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock")
         vrfCoordinatorV2Address = vrfCoordinatorV2Mock.address
         const transactionResponse = await vrfCoordinatorV2Mock.createSubscription()
-        const transactionReceipt = await transactionResponse.wait(1)
+        const transactionReceipt = await transactionResponse.wait()
         subscriptionId = transactionReceipt.events[0].args.subId
+
         // Funding subscription on real network require LINK
         await vrfCoordinatorV2Mock.fundSubscription(subscriptionId, VRF_SUB_FUND_AMOUNT)
     } else {
         vrfCoordinatorV2Address = networkConfig[chainId]["vrfCoordinatorV2"]
         subscriptionId = networkConfig[chainId]["subscriptionId"]
     }
+    // const waitBlockConfirmations = developmentChains.includes(network.name)
+    //     ? 1
+    //     : VERIFICATION_BLOCK_CONFIRMATIONS
 
-    const entranceFee = networkConfig[chainId]["entranceFee"]
-    const gasLane = networkConfig[chainId]["gasLane"]
-    const callbackGasLimit = networkConfig[chainId]["callbackGasLimit"]
+    // log("----------------------------------------------------")
+
     const interval = networkConfig[chainId]["interval"]
 
     const args = [
         vrfCoordinatorV2Address,
-        entranceFee,
-        gasLane,
+        networkConfig[chainId]["entranceFee"],
+        networkConfig[chainId]["gasLane"],
         subscriptionId,
-        callbackGasLimit,
+        networkConfig[chainId]["callbackGasLimit"],
         interval,
     ]
     const raffle = await deploy("Raffle", {

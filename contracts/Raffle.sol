@@ -12,7 +12,9 @@ pragma solidity ^0.8.7;
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
+import "hardhat/console.sol";
 
+/* Errors */
 error Raffle__NotEnoughETHEntered();
 error Raffle__TransferFailed();
 error Raffle__NotOpen();
@@ -32,20 +34,20 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
     }
 
     /* State Variables */
-    uint256 private immutable i_entranceFee;
-    address payable[] private s_players;
     VRFCoordinatorV2Interface private immutable i_vrfCoodinator;
-    bytes32 private immutable i_gasLane;
     uint64 private immutable i_subscriptionId;
+    bytes32 private immutable i_gasLane;
     uint32 private immutable i_callbackGasLimit;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
 
     // Lottery Variables
-    address private s_recentWinner;
-    RaffleState private s_raffleState;
-    uint256 private s_lastTimeStamp;
     uint256 private immutable i_interval;
+    uint256 private immutable i_entranceFee;
+    uint256 private s_lastTimeStamp;
+    address private s_recentWinner;
+    address payable[] private s_players;
+    RaffleState private s_raffleState;
 
     /* Events*/
     // Name events with the function name reversed
@@ -62,8 +64,8 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         uint32 callbackGasLimit,
         uint256 interval
     ) VRFConsumerBaseV2(vrfCoordinatorV2) {
-        i_entranceFee = entranceFee;
         i_vrfCoodinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
+        i_entranceFee = entranceFee;
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
@@ -98,17 +100,19 @@ contract Raffle is VRFConsumerBaseV2, KeeperCompatibleInterface {
         bytes memory /* checkData */
     )
         public
+        view
         override
         returns (
             bool upkeepNeeded,
             bytes memory /* performData */
         )
     {
-        bool isOpen = (RaffleState.OPEN == s_raffleState);
+        bool isOpen = RaffleState.OPEN == s_raffleState;
         bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
-        bool hasPlayers = (s_players.length > 0);
+        bool hasPlayers = s_players.length > 0;
         bool hasBalance = address(this).balance > 0;
         upkeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance);
+        return (upkeepNeeded, "0x0");
     }
 
     function performUpkeep(
